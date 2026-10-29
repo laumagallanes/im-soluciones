@@ -92,6 +92,13 @@ Si las dimensiones del logo cambian, ajustá los `width`/`height` de los `<img>`
 
 ## Probar en local
 
+Cuando cambies `public/css/styles.css`, actualizá el query `?v=` de su `<link>` en `public/index.html` y `public/404.html` para que los navegadores y Cloudflare no reutilicen una hoja anterior. Usá los primeros 12 caracteres de `sha256sum public/css/styles.css`; el chequeo valida el formato y contra el CSS servido cuando recibe una URL.
+
+```bash
+sha256sum public/css/styles.css
+# Reemplazá v=... en ambos HTML con los primeros 12 caracteres del hash
+```
+
 ```bash
 # 1) Chequeos estáticos (enlaces, anclas, alt, metadatos, sitemap, compose sin puertos…)
 node scripts/check-site.mjs

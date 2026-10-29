@@ -72,8 +72,13 @@ for (const page of ['index.html', '404.html']) {
   }
   for (const t of [...tags(html, 'link'), ...tags(html, 'script'), ...tags(html, 'img')]) {
     const ref = t.href ?? t.src;
-    if (ref && ref.startsWith('/')) ok(existsSync(join(PUB, ref)), `recurso ${ref}`);
+    if (ref && ref.startsWith('/')) {
+      const assetPath = ref.split(/[?#]/, 1)[0];
+      ok(existsSync(join(PUB, assetPath)), `recurso ${ref}`);
+    }
   }
+  const stylesheet = tags(html, 'link').find((l) => l.rel === 'stylesheet' && l.href.startsWith('/css/styles.css'));
+  ok(/^\/css\/styles\.css\?v=[a-f0-9]{12}$/i.test(stylesheet?.href || ''), `CSS con versionado por contenido (${stylesheet?.href ?? 'faltante'})`);
   for (const img of tags(html, 'img')) {
     ok('alt' in img, `alt en ${img.src}`);
     if (img.width && img.height && existsSync(join(PUB, img.src))) {
@@ -193,12 +198,14 @@ if (base) {
   ok(home.h.get('x-content-type-options') === 'nosniff', 'cabecera nosniff');
   ok(home.h.get('cache-control') === 'no-cache', `HTML no-cache (${home.h.get('cache-control')})`);
   ok(!/nginx\//.test(home.h.get('server') || ''), `server_tokens off (${home.h.get('server')})`);
-  for (const p of ['/css/styles.css', '/js/main.js', '/js/config.js', '/img/logo.png', '/img/logo-mark.png', '/img/og-image.png',
+  const stylesheet = tags(home.body, 'link').find((l) => l.rel === 'stylesheet' && l.href.startsWith('/css/styles.css'))?.href ?? '/css/styles.css';
+  for (const p of [stylesheet, '/js/main.js', '/js/config.js', '/img/logo.png', '/img/logo-mark.png', '/img/og-image.png',
     '/favicon.ico', '/apple-touch-icon.png', '/site.webmanifest', '/robots.txt', '/sitemap.xml', '/healthz']) {
     const r = await get(p);
     ok(r.status === 200, `GET ${p} -> ${r.status} ${r.h.get('content-type')} ${r.h.get('cache-control') ?? ''}`);
   }
-  const css = await get('/css/styles.css');
+  const css = await get(stylesheet);
+  ok(css.body.includes('max-height: 190px') && css.body.includes('object-fit: contain'), 'CSS versionado contiene el sizing actual de logos');
   ok(css.h.get('content-encoding') === 'gzip', 'CSS servido con gzip');
   ok(css.h.get('x-frame-options') === 'DENY', 'cabeceras de seguridad también en assets');
   const missing = await get('/no-existe');
