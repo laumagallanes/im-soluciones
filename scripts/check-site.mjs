@@ -148,6 +148,23 @@ console.log('\n# Portfolio y producto');
   const projectTitles = [...portfolio.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
   ok(JSON.stringify(projectTitles) === JSON.stringify(['Sistema Warriors', 'Escudero Mecanizados', 'Taller Suárez Hermanos', 'Tribu Habitar', 'Parada Verde']),
     `portfolio con solo los cinco proyectos previstos (${projectTitles.join(', ')})`);
+  const description = (title) => {
+    const heading = `<h3>${title}</h3>`;
+    const after = portfolio.slice(portfolio.indexOf(heading) + heading.length);
+    const start = after.indexOf('<p>');
+    const end = after.indexOf('</p>', start + 3);
+    return start >= 0 && end >= 0 ? after.slice(start + 3, end) : '';
+  };
+  const warriorDescription = description('Sistema Warriors').toLowerCase();
+  ok(['control de ingreso', 'turnos web', 'historial de consultas', 'profesionales'].every((s) => warriorDescription.includes(s)),
+    'descripción funcional de Sistema Warriors');
+  ok(description('Escudero Mecanizados').toLowerCase().includes('landing page'), 'descripción funcional de Escudero Mecanizados');
+  ok(description('Taller Suárez Hermanos').toLowerCase().includes('landing page'), 'descripción funcional de Taller Suárez Hermanos');
+  const tribuDescription = description('Tribu Habitar').toLowerCase();
+  ok(tribuDescription.includes('turnero web') && tribuDescription.includes('carrito de compras'), 'descripción funcional de Tribu Habitar');
+  const paradaDescription = description('Parada Verde').toLowerCase();
+  ok(['stock', 'ventas presenciales', 'ventas online'].every((s) => paradaDescription.includes(s)), 'descripción funcional de Parada Verde');
+
   const hrefs = tags(portfolio, 'a').map((a) => a.href);
   const warriors = hrefs.filter((h) => /warriors/i.test(h));
   ok(warriors.length === 1 && warriors[0] === 'https://warriors.im-soluciones.com/',

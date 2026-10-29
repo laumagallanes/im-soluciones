@@ -57,7 +57,12 @@ Comportamiento:
 Todo el contenido está en `public/index.html`, separado por comentarios (`<!-- SERVICIOS -->`, `<!-- PORTFOLIO -->`, `<!-- PRODUCTO PROPIO -->`, etc.).
 
 - **Servicios** = capacidades ofrecidas.
-- **Portfolio** = sitios y sistemas de proyectos realizados (Warriors, Escudero Mecanizados, Taller Suárez Hermanos, Tribu Habitar y Parada Verde). Para sumar uno, duplicá un `<article class="project-card">`. Las descripciones son deliberadamente neutrales; ampliarlas solo con información verificable.
+- **Portfolio** = sitios y sistemas de proyectos realizados. Para sumar uno, duplicá un `<article class="project-card">`. Cada tarjeta describe qué hace el proyecto, sin métricas ni resultados; ampliarla solo con información verificable:
+  - **Warriors**: sistema de control de ingreso, turnos web e historial de consultas con profesionales.
+  - **Escudero Mecanizados**: landing page institucional para tornería industrial y mecanizado de piezas a medida.
+  - **Taller Suárez Hermanos**: landing page de presentación de los servicios (mecánica general, aire acondicionado, semiejes, cajas de dirección y tornería).
+  - **Tribu Habitar**: turnero web y carrito de compras, como carta de presentación del proyecto.
+  - **Parada Verde**: gestión de stock, ventas presenciales y ventas online para una verdulería.
 - **Qontrol.ar**: producto propio con enlace a `https://qontrolar.im-soluciones.com/`. El texto no afirma integraciones ni hardware instalado.
 
 #### Logos del portfolio
