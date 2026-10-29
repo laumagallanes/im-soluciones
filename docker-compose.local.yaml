@@ -1,0 +1,8 @@
+# Override SOLO para pruebas locales: publica el sitio en http://127.0.0.1:8080
+# No usar en Dokploy.
+services:
+  web:
+    ports:
+      - "127.0.0.1:8080:80"
+  cloudflared:
+    profiles: ["remote-tunnel"]

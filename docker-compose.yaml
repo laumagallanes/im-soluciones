@@ -1,0 +1,44 @@
+# Despliegue de producción (Dokploy + Cloudflare Tunnel).
+#
+# - No se publican puertos en el host: cloudflared llega a web:80 por la red Compose.
+#   El hostname se configura en el túnel remoto de Cloudflare; ver README.md.
+# - Sin nombre de contenedor fijo: Dokploy necesita poder nombrar/reemplazar contenedores en cada deploy.
+# - Para probar en local con un puerto del host usá el override:
+#     docker compose -f docker-compose.yaml -f docker-compose.local.yaml up -d --build
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: im-soluciones-site:latest
+    expose:
+      - "80"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARED_TUNNEL_TOKEN}
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
