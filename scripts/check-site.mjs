@@ -26,6 +26,20 @@ const pngSize = (p) => {
   const b = readFileSync(p);
   return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
 };
+// Dimensiones intrínsecas de PNG, WebP (VP8/VP8L/VP8X) y SVG (viewBox).
+const imgSize = (p) => {
+  const b = readFileSync(p);
+  if (b.toString('ascii', 1, 4) === 'PNG') return pngSize(p);
+  if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
+    const chunk = b.toString('ascii', 12, 16);
+    if (chunk === 'VP8X') return { w: 1 + b.readUIntLE(24, 3), h: 1 + b.readUIntLE(27, 3) };
+    if (chunk === 'VP8 ') return { w: b.readUInt16LE(26) & 0x3fff, h: b.readUInt16LE(28) & 0x3fff };
+    if (chunk === 'VP8L') { const n = b.readUInt32LE(21); return { w: (n & 0x3fff) + 1, h: ((n >> 14) & 0x3fff) + 1 }; }
+  }
+  const vb = b.toString('utf8').match(/<svg\b[^>]*viewBox="[\d.\s-]*?([\d.]+)\s+([\d.]+)"/);
+  if (vb) return { w: Number(vb[1]), h: Number(vb[2]) };
+  return null;
+};
 const attrs = (tag) => Object.fromEntries([...tag.matchAll(/([\w:-]+)(?:="([^"]*)")?/g)].slice(1).map((m) => [m[1], m[2] ?? '']));
 const tags = (html, name) => [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'gi'))].map((m) => attrs(m[0]));
 
@@ -63,7 +77,7 @@ for (const page of ['index.html', '404.html']) {
   for (const img of tags(html, 'img')) {
     ok('alt' in img, `alt en ${img.src}`);
     if (img.width && img.height && existsSync(join(PUB, img.src))) {
-      const { w, h } = pngSize(join(PUB, img.src));
+      const { w, h } = imgSize(join(PUB, img.src)) ?? { w: 0, h: 1 };
       ok(Math.abs(w / h - img.width / img.height) < 0.02, `proporción width/height de ${img.src} (${img.width}x${img.height} vs real ${w}x${h})`);
     }
   }
@@ -104,13 +118,65 @@ console.log('\n# Contenido y configuración');
   const leftovers = files.filter((f) => /vivir\s*plenamente|vivirplenamente|adicci[oó]n|cabalgata/i.test(readFileSync(f, 'utf8')));
   ok(leftovers.length === 0, `sin restos del template anterior ${leftovers.join(', ')}`);
   const cfg = read('public/js/config.js');
-  ok(/whatsappNumber:\s*''/.test(cfg), 'whatsappNumber sin número inventado (vacío por defecto)');
+  ok(/whatsappNumber:\s*'5493415963582',/.test(cfg), "whatsappNumber exactamente '5493415963582'");
   ok(/contactEmail:\s*''/.test(cfg), 'contactEmail sin email inventado (vacío por defecto)');
+  const html = read('public/index.html');
+  ok(/<a class="wa-float"[^>]*data-cta="whatsapp"/.test(html), 'botón flotante de WhatsApp presente (data-cta="whatsapp")');
+  const visible = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  ok(!/5493415963582|341\s*-?\s*596\s*-?\s*3582|\+54 9/.test(visible), 'el número de WhatsApp no se muestra como texto (solo CTA)');
   const compose = read('docker-compose.yaml');
   ok(!/^\s*ports:/m.test(compose), 'docker-compose.yaml sin port binding al host');
   ok(!/container_name/.test(compose), 'docker-compose.yaml sin container_name fijo');
   const size = walk(PUB).reduce((s, f) => s + statSync(f).size, 0);
   ok(size < 600 * 1024, `peso total de public/ ${(size / 1024).toFixed(0)} KB (< 600 KB)`);
+}
+
+console.log('\n# Portfolio y producto');
+{
+  const html = read('public/index.html');
+  const section = (id) => html.match(new RegExp(`<section\\b[^>]*id="${id}"[\\s\\S]*?</section>`))?.[0] ?? '';
+  const portfolio = section('portfolio');
+  const servicios = section('servicios');
+  const qontrol = section('qontrol');
+  ok(portfolio.length > 0 && qontrol.length > 0, 'secciones #portfolio y #qontrol presentes');
+
+  const projectTitles = [...portfolio.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
+  ok(JSON.stringify(projectTitles) === JSON.stringify(['Sistema Warriors', 'Escudero Mecanizados', 'Taller Suárez Hermanos', 'Tribu Habitar', 'Parada Verde']),
+    `portfolio con solo los cinco proyectos previstos (${projectTitles.join(', ')})`);
+  const hrefs = tags(portfolio, 'a').map((a) => a.href);
+  const warriors = hrefs.filter((h) => /warriors/i.test(h));
+  ok(warriors.length === 1 && warriors[0] === 'https://warriors.im-soluciones.com/',
+    `un único proyecto Warriors -> https://warriors.im-soluciones.com/ (${warriors.join(', ')})`);
+  ok((portfolio.match(/<article class="project-card\b/g) || []).length === 5, 'portfolio con 5 proyectos');
+  for (const h of ['https://escuderosas.im-soluciones.com/', 'https://tallersuarez.im-soluciones.com/',
+    'https://tribuhabitar.im-soluciones.com/', 'https://paradaverde.im-soluciones.com/']) {
+    ok(hrefs.includes(h), `link intacto ${h}`);
+  }
+
+  const imgs = tags(portfolio, 'img');
+  for (const [name, src] of [['Warriors', '/img/portfolio/warriors.webp'], ['Escudero', '/img/portfolio/escudero.webp'],
+    ['Tribu Habitar', '/img/portfolio/tribu-habitar.webp'], ['Parada Verde', '/img/portfolio/parada-verde.svg']]) {
+    const img = imgs.find((i) => i.src === src);
+    ok(existsSync(join(PUB, src)), `existe public${src}`);
+    ok(Boolean(img), `tarjeta de ${name} usa ${src}`);
+    ok(Boolean(img) && new RegExp(`logo.*${name}`, 'i').test(img.alt || ''), `alt descriptivo para ${name} ("${img?.alt ?? ''}")`);
+    ok(Boolean(img?.width && img?.height), `width/height en ${src}`);
+  }
+  const taller = portfolio.match(/<article class="project-card\b(?:(?!<\/article>)[\s\S])*tallersuarez(?:(?!<\/article>)[\s\S])*<\/article>/)?.[0] ?? '';
+  ok(/class="[^"]*\bbrand-tsh\b/.test(taller), 'Taller Suárez Hermanos con marca tipográfica (.brand-tsh)');
+  ok(/>TSH</.test(taller) && /TALLER SUÁREZ HERMANOS/.test(taller) && /MECÁNICA · TORNERÍA/.test(taller),
+    'marca TSH / TALLER SUÁREZ HERMANOS / MECÁNICA · TORNERÍA');
+  ok(!/<img\b/.test(taller), 'Taller Suárez Hermanos sin imagen inventada');
+  const styles = read('public/css/styles.css');
+  const logoRule = styles.match(/\.project-logo\s*\{([^}]*)\}/)?.[1] ?? '';
+  ok(/object-fit:\s*contain/.test(logoRule), 'logos del portfolio con object-fit: contain');
+  ok(/width:\s*auto/.test(logoRule) && /height:\s*auto/.test(logoRule) && /max-width:\s*100%/.test(logoRule) && /max-height:\s*190px/.test(logoRule),
+    'logos del portfolio limitados por su tamaño intrínseco (sin crecer más que el preview)');
+
+  const q = tags(qontrol, 'img').find((i) => i.src === '/img/portfolio/qontrol-wordmark.png');
+  ok(Boolean(q) && existsSync(join(PUB, q.src)), 'sección Qontrol usa /img/portfolio/qontrol-wordmark.png');
+  ok(Boolean(q) && /qontrol/i.test(q.alt || ''), `alt descriptivo en wordmark de Qontrol ("${q?.alt ?? ''}")`);
+  ok(!/qontrol/i.test(portfolio) && !/qontrol/i.test(servicios), 'Qontrol solo como producto (no en portfolio ni servicios)');
 }
 
 // ---------- HTTP ----------

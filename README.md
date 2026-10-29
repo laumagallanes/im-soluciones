@@ -14,6 +14,7 @@ public/                  Todo lo que se publica (raíz del sitio)
   js/config.js           ⚙️  Configuración de contacto (WhatsApp / email)
   js/main.js             Menú móvil, CTAs, formulario, animaciones
   img/                   logo.png, logo-mark.png, og-image.png (generados)
+  img/portfolio/         Logos de proyectos y wordmark de Qontrol.ar (assets locales, no generados)
   favicon.ico, favicon-*.png, apple-touch-icon.png, icon-*.png (generados)
   site.webmanifest, robots.txt, sitemap.xml
 brand/logo-origen.png    Logo fuente provisto (no se publica)
@@ -34,8 +35,8 @@ Editá **`public/js/config.js`** (está documentado dentro del archivo):
 
 ```js
 window.IM_CONFIG = {
-  whatsappNumber: '',          // solo dígitos, formato internacional. Ej. de formato: 549 + área + número
-  contactEmail: '',            // casilla que recibe las consultas
+  whatsappNumber: '5493415963582', // solo dígitos, formato internacional (549 + área + número)
+  contactEmail: '',                // casilla que recibe las consultas (vacía por ahora)
   preferredChannel: 'whatsapp',// canal del formulario si ambos están configurados
   messages: { general: '…', emailSubject: '…' },
 };
@@ -45,19 +46,35 @@ Comportamiento:
 
 | Configuración            | Botones "Hablemos" / "Contanos tu proyecto" | Botón flotante WhatsApp | Formulario |
 |--------------------------|----------------------------------------------|-------------------------|------------|
-| Nada configurado (actual)| Llevan a `#contacto`                         | Oculto                  | Muestra aviso, no envía |
+| Nada configurado         | Llevan a `#contacto`                         | Oculto                  | Muestra aviso, no envía |
 | Solo email               | Llevan a `#contacto`                         | Oculto                  | Abre `mailto:` con los datos |
-| WhatsApp válido          | Abren `wa.me` con mensaje precargado         | Visible                 | Abre WhatsApp con los datos |
+| WhatsApp válido (actual) | Abren `wa.me` con mensaje precargado         | Visible                 | Abre WhatsApp con los datos |
 
-> **Antes de publicar**, configurá al menos uno de los dos canales. Por defecto ambos están vacíos a propósito: no hay número ni email inventados.
+> Configuración actual: WhatsApp activo y email vacío. Al cargar `main.js` se habilitan los CTAs existentes y el botón flotante. El número **no se muestra como texto** en la página: solo se usa dentro de los enlaces `wa.me` (el chequeo lo verifica).
 
 ### Textos, portfolio y producto
 
 Todo el contenido está en `public/index.html`, separado por comentarios (`<!-- SERVICIOS -->`, `<!-- PORTFOLIO -->`, `<!-- PRODUCTO PROPIO -->`, etc.).
 
 - **Servicios** = capacidades ofrecidas.
-- **Portfolio** = sitios y sistemas de proyectos realizados (WarriorsMed, Warriors, Escudero Mecanizados, Taller Suárez Hermanos, Tribu Habitar y Parada Verde). Para sumar uno, duplicá un `<article class="project-card">`. Las descripciones son deliberadamente neutrales; ampliarlas solo con información verificable.
+- **Portfolio** = sitios y sistemas de proyectos realizados (Warriors, Escudero Mecanizados, Taller Suárez Hermanos, Tribu Habitar y Parada Verde). Para sumar uno, duplicá un `<article class="project-card">`. Las descripciones son deliberadamente neutrales; ampliarlas solo con información verificable.
 - **Qontrol.ar**: producto propio con enlace a `https://qontrolar.im-soluciones.com/`. El texto no afirma integraciones ni hardware instalado.
+
+#### Logos del portfolio
+
+Cada tarjeta muestra el logo real del proyecto desde `public/img/portfolio/`, como `<img class="project-logo">` con `width`/`height` iguales a las medidas intrínsecas del archivo, `alt` descriptivo ("Logo de …") y `object-fit: contain` (escala sin recortar ni deformar en cualquier ancho). El fondo de cada preview acompaña el contraste de la marca:
+
+| Proyecto | Asset | Fondo del preview |
+|----------|-------|-------------------|
+| Warriors (`https://warriors.im-soluciones.com/`) | `warriors.webp` (730×520) | Oscuro (logo blanco) |
+| Escudero Mecanizados | `escudero.webp` (900×251) | Claro (logo oscuro) |
+| Taller Suárez Hermanos | — | Marca tipográfica `.brand-tsh`: TSH / TALLER SUÁREZ HERMANOS / MECÁNICA · TORNERÍA, sin imagen |
+| Tribu Habitar | `tribu-habitar.webp` (360×360) | Crema |
+| Parada Verde | `parada-verde.svg` (64×80) | Verde claro |
+
+La sección `#qontrol` usa `qontrol-wordmark.png` (252×72), que tiene letras claras: va siempre sobre fondo oscuro. Qontrol.ar no aparece en portfolio ni en servicios.
+
+Si reemplazás un logo, actualizá `width`/`height` con las medidas reales del nuevo archivo (el chequeo compara la proporción en PNG, WebP y SVG).
 
 Si cambiás el dominio, actualizá `canonical`, `og:*`, JSON-LD en `index.html`, `robots.txt` y `sitemap.xml` (y su `<lastmod>`).
 

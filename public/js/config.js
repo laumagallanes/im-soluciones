@@ -25,7 +25,7 @@
  * Si no se configura ninguno de los dos, el formulario muestra un aviso en lugar de enviar.
  */
 window.IM_CONFIG = {
-  whatsappNumber: '',
+  whatsappNumber: '5493415963582',
   contactEmail: '',
   preferredChannel: 'whatsapp',
 
